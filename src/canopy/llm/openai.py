@@ -69,6 +69,15 @@ class OpenAILLM(BaseLLM):
 
     @property
     def available_models(self):
+        """
+        This function returns a list of available model IDs that are stored on the
+        server using the `self._client.models.list()` method.
+
+        Returns:
+            list: The output of the `available_models` function is a list of string
+            IDs of the available models.
+
+        """
         return [k.id for k in self._client.models.list()]
 
     def chat_completion(self,
@@ -132,6 +141,16 @@ class OpenAILLM(BaseLLM):
             self._handle_chat_error(e)
 
         def streaming_iterator(response):
+            """
+            This function implements a streaming iterator over the incoming response
+            chunks of a WebSocket message.
+
+            Args:
+                response (list): The `response` input parameter is a stream of
+                    chunks of data that will be iterated over and parsed into
+                    `StreamingChatChunk` objects using the `parse_obj` method.
+
+            """
             for chunk in response:
                 yield StreamingChatChunk.parse_obj(chunk)
 
@@ -239,6 +258,35 @@ class OpenAILLM(BaseLLM):
                                model_params: Optional[dict] = None,
                                ) -> Union[ChatResponse,
                                           Iterable[StreamingChatChunk]]:
+        """
+        This function is a type hint for a method that is expected to implement
+        the logic for generating a response to a user input (such as a message or
+        command) within a chat setting. It takes various parameters related to the
+        conversation context and input processing and returns a response or an
+        iterable of responses.
+
+        Args:
+            system_prompt (str): The `system_prompt` parameter is an input for
+                this function and it's a string value representing the system
+                prompt provided as an example response before asking the user for
+                input. It helps determine how much of the system prompt to provide.
+            chat_history (Messages): The `chat_history` input parameter is a
+                sequence of previous messages sent to the chatbot.
+            context (None): The `context` input parameter is optional and specifies
+                the context of the conversation.
+            stream (False): The `stream` parameter is used to determine whether
+                the function should return a single chat response or an iterable
+                of streaming chat chunks. If `stream` is set to `True`, the function
+                will return an iterable of streaming chat chunks.
+            max_generated_tokens (None): The `max_generated_tokens` parameter
+                specifies the maximum number of tokens to generate for the response.
+                If not set or set to `None`, the default value will be used (which
+                is typically around 20-30 tokens).
+            model_params (None): The `model_params` input parameter is an optional
+                dictionary of parameters that can be passed to the machine learning
+                model used by the `achat` function for generating responses.
+
+        """
         raise NotImplementedError()
 
     async def aenforced_function_call(self,
@@ -247,10 +295,42 @@ class OpenAILLM(BaseLLM):
                                       function: Function, *,
                                       max_tokens: Optional[int] = None,
                                       model_params: Optional[dict] = None):
+        """
+        This function is a decorator that raises a `NotImplementedError` if called.
+        It takes several parameters but does not implement any functionality.
+
+        Args:
+            system_prompt (str): The `system_prompt` parameter is a string that
+                represents the user's system prompt.
+            chat_history (Messages): The `chat_history` parameter is a list of
+                Messages objects representing the previous messages exchanged
+                between the user and the system.
+            function (Function): The `function` parameter is a function to be
+                called with the specified arguments.
+            max_tokens (None): The `max_tokens` input parameter limits the number
+                of tokens (i.e., output words or characters) that the function can
+                generate for the given chat history and function call.
+            model_params (None): The `model_params` input parameter is an optional
+                dictionary of parameters that can be passed to the machine learning
+                model being used by the function.
+
+        """
         raise NotImplementedError()
 
     @staticmethod
     def _format_openai_error(e):
+        """
+        This function takes an exception e as input and returns a string representing
+        the error message.
+
+        Args:
+            e (): The `e` input parameter is an exception object that is passed
+                to the function when an error occurs with the OpenAI API.
+
+        Returns:
+            str: The output returned by this function is `str(e)`.
+
+        """
         try:
             response = e.response.json()
             if "error" in response:
@@ -263,6 +343,20 @@ class OpenAILLM(BaseLLM):
             return str(e)
 
     def _handle_chat_error(self, e, is_function_call=False):
+        """
+        This function handles errors that occur when using a Language Model (LLM)
+        for chat completion. It catches OpenAI NotFoundError exceptions and raises
+        a NotImplementedError if the selected model does not support function calling.
+
+        Args:
+            e (): The `e` parameter is an exception object that is raised within
+                the function and contains information about the error that occurred
+                when trying to use the model for chat completion.
+            is_function_call (bool): The `is_function_call` input parameter indicates
+                whether the `e` exception was raised due to a function call being
+                made on an invalid model.
+
+        """
         if isinstance(e, openai.NotFoundError) and is_function_call:
             if e.type and 'invalid' in e.type:
                 raise NotImplementedError(
